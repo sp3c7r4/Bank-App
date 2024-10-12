@@ -1,63 +1,125 @@
-import { View, Text, Pressable, Image, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
-import { useNavigation } from '@react-navigation/native'
-import { Colors } from '../constants/Colors'
-import React, {useState} from 'react'
-import LoginInputBox from '../components/LoginInputBox'
+import {
+  View,
+  Text,
+  Pressable,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { useContext, useState } from "react";
+import axios from "axios"; // Make sure axios is imported
+import LoginInputBox from "../components/LoginInputBox";
+import { UserContext } from "../context/UserContext";
+import { Colors } from "../constants/Colors";
 
+const apiUrl = process.env.REACT_APP_API_URL;
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const navigation = useNavigation()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const { dispatch } = useContext(UserContext);
+  const navigation = useNavigation();
+
+  async function handleSubmit() {
+    // console.log(apiUrl)
+    try {
+      dispatch({ type: "setLoader", payload: true });
+      const loginResponse = await axios.post(`https://api.montrealtriustfinancial.online/auth/token`, {
+        email,
+        password,
+      });
+      const { data } = loginResponse;
+
+      if (data) {
+        console.log(data)
+        dispatch({ type: "login", payload: data });
+
+        if (data?.verified.toLowerCase() === "false") {
+          dispatch({ type: "setLoader", payload: false });
+        }
+        if (data?.pin.toLowerCase() === "false" && data?.verified.toLowerCase() === "true") {
+          return navigation.navigate("SetPin");
+        }
+        if (data?.pin.toLowerCase() === "true" && data?.verified.toLowerCase() === "true") {
+          dispatch({ type: "setLoader", payload: false });
+          return navigation.navigate("Bank");
+        }
+      } else {
+        setLoginError("Incorrect login or password.");
+        dispatch({ type: "setLoader", payload: false });
+      }
+    } catch (error) {
+      console.log(error)
+      setLoginError("Something went wrong. Please try again.");
+      dispatch({ type: "setLoader", payload: false });
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <Pressable onPress={() => navigation.goBack()}>
-        <Image style={styles.backButton} source={require('./../assets/images/backbutton.png')} />
+        <Image
+          style={styles.backButton}
+          source={require("./../assets/images/backbutton.png")}
+        />
       </Pressable>
-      <ScrollView contentContainerStyle={{}}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-      <View style={{display: "flex", alignItems: "center"}}>
-        <Image resizeMode='contain' style={styles.imageSize} source={require('./../assets/images/login.png')}/>
-      </View>
 
-      <View style={styles.bottomContainer}>
-        <KeyboardAvoidingView behavior='padding'>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <Text style={{fontFamily: 'outfit-black', fontSize: 16, marginTop: 20}}>Login</Text>
-          <Text style={{fontFamily: 'outfit-black', fontSize: 10, color: Colors.GRAY}}>Enter your information</Text>
-          <View style={{flexDirection: "column", justifyContent: "space-between"}}>
-            <LoginInputBox name="Email" placeholder="Enter your email" image={require('./../assets/images/mail.png')}/>
-            <LoginInputBox name="Password" image={require('./../assets/images/person.png')}/>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={{ height: "95%" }}>
+          <View style={{ display: "flex", alignItems: "center", flex: 1 }}>
+            <Image
+              resizeMode="contain"
+              style={styles.imageSize}
+              source={require("./../assets/images/login.png")}
+            />
           </View>
-          <TouchableOpacity>
-            <View style={{backgroundColor: Colors.APPCOLOR,
-              paddingHorizontal: 60,
-              height: 50,
-              borderRadius: 10,
-              marginVertical: 30,
-              marginBottom: 65,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              // marginTop: 60,
-            }}>
-              <Text style={{textAlign: "center",
-              fontFamily: 'outfit-black'}}>
-                Login
-              </Text>
+
+          <View style={styles.bottomContainer}>
+            <Text
+              style={{
+                fontFamily: "outfit-black",
+                textAlign: "center",
+                fontSize: 20,
+                marginTop: 20,
+              }}
+            >
+              Login to your account
+            </Text>
+
+            <View style={{ flexDirection: "column", justifyContent: "space-between" }}>
+              <LoginInputBox
+                value={email}
+                handleTextChange={setEmail}
+                placeholder="Email"
+                image={require("./../assets/images/mail.png")}
+              />
+              <LoginInputBox
+                value={password}
+                handleTextChange={setPassword}
+                placeholder="Password"
+                image={require("./../assets/images/person.png")}
+              />
             </View>
-          </TouchableOpacity>
-          </ScrollView>
-          </KeyboardAvoidingView>
-      </View>
-    </KeyboardAvoidingView>
-    </ScrollView>
+
+            {loginError ? <Text style={styles.errorText}>{loginError}</Text> : null}
+
+            <TouchableOpacity onPress={handleSubmit}>
+              <View style={styles.loginButton}>
+                <Text style={styles.loginButtonText}>Login</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -65,22 +127,42 @@ const styles = StyleSheet.create({
     height: 35,
     width: 35,
     margin: 15
-  }, container: {
+  },
+  container: {
     flex: 1,
     backgroundColor: Colors.APPDARKCOLOR,
-  }, imageSize: {
-    width: 200,
-    height: 200,
-    borderWidth: 3
-  }, bottomContainer: {
+    paddingHorizontal: 5
+  },
+  imageSize: {
+    width: 250,
+    height: 250
+  },
+  bottomContainer: {
     paddingHorizontal: 20,
     borderTopRightRadius: 20,
     borderTopLeftRadius: 20,
     marginTop: 20,
-    display: "flex",
-    flex: 1,
+    flex: 1.5,
     backgroundColor: "#fff",
-    width: "100%",
-    // justifyContent: "flex-end"
+    width: "100%"
+  },
+  loginButton: {
+    backgroundColor: Colors.APPCOLOR,
+    paddingHorizontal: 60,
+    height: 50,
+    borderRadius: 10,
+    marginVertical: 30,
+    marginBottom: 65,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  loginButtonText: {
+    textAlign: "center",
+    fontFamily: "outfit-black"
+  },
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    marginVertical: 10
   }
-})
+});
