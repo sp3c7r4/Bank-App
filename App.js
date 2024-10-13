@@ -8,8 +8,9 @@ import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
 import LoginScreen from "./screens/LoginScreen";
 import UserContextProvider from "./context/UserContext";
-import Bank from "./screens/Bank";
+import Bank from "./screens/Tabs/Bank";
 import SetPin from "./screens/SetPin";
+import TabScreen from "./screens/TabScreen";
 
 SplashScreen.preventAutoHideAsync();
 SystemUI.setBackgroundColorAsync("black");
@@ -47,6 +48,7 @@ export default function App() {
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Bank" component={Bank} />
+        <Stack.Screen name="Tab" component={TabScreen} />
         <Stack.Screen name="SetPin" component={SetPin} />
       </Stack.Navigator>
     </NavigationContainer>
