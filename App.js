@@ -11,6 +11,9 @@ import UserContextProvider from "./context/UserContext";
 import Bank from "./screens/Tabs/Bank";
 import SetPin from "./screens/SetPin";
 import TabScreen from "./screens/TabScreen";
+import 'react-native-gesture-handler';
+import { enableScreens } from 'react-native-screens';
+enableScreens();
 
 SplashScreen.preventAutoHideAsync();
 SystemUI.setBackgroundColorAsync("black");

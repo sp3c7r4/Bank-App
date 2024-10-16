@@ -3,11 +3,15 @@ import RegisterScreen from './RegisterScreen';
 import LoginScreen from './LoginScreen';
 import { Image, StyleSheet } from 'react-native';
 import Bank from './Tabs/Bank';
+import BottomSheet from './ScreenBottomSheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabScreen() {
   return (
+    <GestureHandlerRootView>
+
     <Tab.Navigator screenOptions={{
       headerShown: false,
       tabBarShowLabel: false,tabBarStyle: {
@@ -19,7 +23,7 @@ export default function TabScreen() {
       <Tab.Screen name="Home" component={Bank} options={{
         tabBarIcon: () => <Image source={require('./../assets/images/home_black.png')} style={{width: 20, height: 20}}/>,
       }}/>
-      <Tab.Screen name="Cards" component={LoginScreen} options={{
+      <Tab.Screen name="Cards" component={BottomSheet} options={{
         tabBarIcon: () => <Image source={require('./../assets/images/cards.png')} resizeMode="contain" style={{width: 30, height: 20}}/>,
       }}/>
       <Tab.Screen name="Transactions" component={LoginScreen} options={{
@@ -29,6 +33,7 @@ export default function TabScreen() {
         tabBarIcon: () => <Image source={require('./../assets/images/settings.png')} resizeMode="contain" style={{width: 20, height: 20}}/>,
       }}/>
     </Tab.Navigator>
+    </GestureHandlerRootView>
   );
 }
 

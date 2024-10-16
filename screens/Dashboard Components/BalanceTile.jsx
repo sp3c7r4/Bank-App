@@ -1,14 +1,13 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Colors } from '../../constants/Colors'
+import BottomSheet from '@gorhom/bottom-sheet';
 
 
 
-export default function BalanceTile({ userInfo }) {
+export default function BalanceTile({ userInfo, moneyTransfer, moneyDeposit , moneyWithdraw, cryptoTransfer, cryptoDeposit, cryptoWithdraw }) {
   const [swap, setSwap] = useState(false);
-  
-  const CryptoTile = ({userInfo}) => {
-  // console.log(userInfo.cryptos[0].btc_balance)
+  const CryptoTile = ({userInfo, cryptoTransfer, cryptoDeposit, cryptoWithdraw}) => {
     return (
       <View style={styles.container}>
         <View style={{alignItems: "center"}}>
@@ -74,7 +73,8 @@ export default function BalanceTile({ userInfo }) {
           <Text style={{color: "#000", fontFamily: 'outfit-black', fontSize: 20, marginTop: 10}}>${userInfo.balance.toFixed(2)}</Text>
         </View>
         <View style={{flexDirection: "row",justifyContent: "space-evenly", marginTop: 5}}>
-          <TouchableOpacity>
+          {/*Crypto Transfer*/}
+          <TouchableOpacity onPress={cryptoTransfer}>
             <View style={{
               backgroundColor: Colors.BALANCETILEGREEN,
               padding: 7,
@@ -87,7 +87,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{fontFamily: "outfit-medium"}}>Transfer</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/*Crypto Deposit*/}
+          <TouchableOpacity onPress={cryptoDeposit}>
             <View style={{
               backgroundColor: Colors.APPDARKCOLOR,
               padding: 7,
@@ -100,7 +101,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{fontFamily: "outfit-medium", color: "#fff"}}>Deposit</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/*Crypto Withdraw*/}
+          <TouchableOpacity onPress={cryptoWithdraw}>
             <View style={{
               backgroundColor: Colors.BALANCETILEGREEN,
               padding: 7,
@@ -118,7 +120,7 @@ export default function BalanceTile({ userInfo }) {
     )
   }
 
-  const BalancesTile = ({ userInfo }) => {
+  const BalancesTile = ({ userInfo, moneyDeposit, moneyTransfer, moneyWithdraw }) => {
     return (
       <View style={styles.container}>
         <View style={{ alignItems: "center" }}>
@@ -143,7 +145,8 @@ export default function BalanceTile({ userInfo }) {
           </Text>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-evenly", marginTop: 5 }}>
-          <TouchableOpacity>
+          {/* Balance Transfer */}
+          <TouchableOpacity onPress={moneyTransfer}>
             <View
               style={{
                 backgroundColor: Colors.BALANCETILEGREEN,
@@ -158,7 +161,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{ fontFamily: "outfit-medium" }}>Transfer</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* Balance Deposit */}
+          <TouchableOpacity onPress={moneyDeposit}>
             <View
               style={{
                 backgroundColor: Colors.APPDARKCOLOR,
@@ -173,7 +177,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{ fontFamily: "outfit-medium", color: "#fff" }}>Deposit</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* Balance Withdraw */}
+          <TouchableOpacity onPress={moneyWithdraw}>
             <View
               style={{
                 backgroundColor: Colors.BALANCETILEGREEN,
@@ -203,9 +208,10 @@ export default function BalanceTile({ userInfo }) {
     },
   });
 
+  // const snapPoints = useMemo(() => ["25%", "50%", "70%"], []);
   return (
     <View>
-      {swap ? <CryptoTile userInfo={userInfo}/> : <BalancesTile userInfo={userInfo} />}
+      {swap ? <CryptoTile userInfo={userInfo} cryptoTransfer={cryptoTransfer} cryptoWithdraw={cryptoWithdraw} cryptoDeposit={cryptoDeposit}/> : <BalancesTile moneyTransfer={moneyTransfer} moneyWithdraw={moneyWithdraw} moneyDeposit={moneyDeposit} userInfo={userInfo}  />}
     </View>
   );
 }
