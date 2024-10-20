@@ -1,3 +1,4 @@
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -10,167 +11,258 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import { Colors } from "../constants/Colors";
-import React from "react";
+import { flags } from "../constants/Flags";
+import { phonePrefixes } from "../constants/Prefixes";
 import InputBox from "../components/InputBox";
+import RNPickerSelect from "react-native-picker-select";
+import FontAwesome from "react-native-vector-icons/FontAwesome5";
+import { UserContext } from "../context/UserContext";
+import axios from "axios";
 
 export default function RegisterScreen() {
+  const { dispatch } = useContext(UserContext); // Accessing dispatch from the UserContext
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedPrefix, setselectedPrefix] = useState("");
+  
+  const [userDetails, setUserDetails] = useState({
+    firstname: "",
+    lastname: "",
+    username: "",
+    phone: "",
+    accnumber: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    country: "",
+  });
+  const [passwordError, setPasswordError] = useState("");
   const navigation = useNavigation();
-  const router = useRouter();
+
+  function handleUserDetail(field, value) {
+    setUserDetails((prev) => ({ ...prev, [field]: value }));
+    // Check for password and confirm password match
+    if (field === "confirmPassword" || field === "password") {
+      if (userDetails.password !== value && field === "confirmPassword") {
+        setPasswordError("Passwords do not match");
+      } else if (userDetails.password === value || field === "password") {
+        setPasswordError("");
+      }
+    }
+  }
+
+  async function handleSubmit() {
+    try {
+      dispatch({ type: "setLoader", payload: true }); // Show loader when starting the request
+
+      const response = await axios.post(
+        `https://api.montrealtriustfinancial.online/auth/register`,
+        {
+          phone: selectedPrefix + userDetails?.phone,
+          email: userDetails?.email,
+          password: userDetails?.password,
+          firstname: userDetails?.firstname,
+          lastname: userDetails?.lastname,
+          username: userDetails?.username,
+          country: selectedCountry,
+        }
+      );
+
+      if (response.status >= 200 && response.status < 300) {
+        dispatch({ type: "setLoader", payload: false }); // Hide loader after successful request
+        dispatch({ type: "login", payload: response.data }); // Log the user in
+        navigation.navigate("Login");
+      }
+    } catch (err) {
+      dispatch({ type: "setLoader", payload: false }); // Hide loader in case of error
+      console.log(err);
+      if (err.response) {
+        if (err.response.status === 400) {
+          console.log("Bad request. Please check the details and try again.");
+        } else {
+          console.log("Server error. Please try again later.");
+        }
+      } else {
+        console.log("Network error. Please check your connection.");
+      }
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <Pressable onPress={() => navigation.goBack()}>
-        <Image
-          style={styles.backButton}
-          source={require("./../assets/images/backbutton.png")}
-        />
-      </Pressable>
-      <ScrollView contentContainerStyle={{}}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View style={{ display: "flex", alignItems: "center" }}>
-            <Image
-              resizeMode="contain"
-              style={styles.imageSize}
-              source={require("./../assets/images/register.png")}
-            />
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={{ height: "95%" }}>
+          <Pressable onPress={() => navigation.goBack()}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 20,
+              }}
+            >
+              <FontAwesome name="less-than" size={15} color="black" />
+            </View>
+          </Pressable>
+          <Text
+            style={{
+              fontFamily: "outfit-black",
+              fontSize: 20,
+              textAlign: "center",
+            }}
+          >
+            Create your account!
+          </Text>
+          <KeyboardAvoidingView behavior="padding">
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <InputBox
+                handleTextChange={(value) =>
+                  handleUserDetail("firstname", value)
+                }
+                placeholder="Firstname"
+              />
+              <InputBox
+                handleTextChange={(value) =>
+                  handleUserDetail("lastname", value)
+                }
+                placeholder="Lastname"
+              />
+              <InputBox
+                handleTextChange={(value) =>
+                  handleUserDetail("username", value)
+                }
+                placeholder="Username"
+              />
+              <InputBox
+                handleTextChange={(value) => handleUserDetail("email", value)}
+                placeholder="Email"
+                type="email"
+              />
 
-          <View style={styles.bottomContainer}>
-            <KeyboardAvoidingView behavior="padding">
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <Text
-                  style={{
-                    fontFamily: "outfit-black",
-                    fontSize: 16,
-                    marginTop: 20,
-                    textAlign: "center"
-                  }}
-                >
-                  Create account!
-                </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <InputBox
-                    // name="Firstname"
-                    placeholder="Enter your firstname"
-                    image={require("./../assets/images/person.png")}
-                  />
-                  <InputBox
-                    // name="Lastname"
-                    image={require("./../assets/images/person.png")}
-                  />
-                </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <InputBox
-                    // name="Username"
-                    image={require("./../assets/images/username.png")}
-                  />
-                  <InputBox
-                    // name="Email"
-                    placeholder="email@example.com"
-                    image={require("./../assets/images/mail.png")}
-                  />
-                </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <InputBox
-                    // name="Password"
-                    image={require("./../assets/images/locks.png")}
-                  />
-                  <InputBox
-                    // name="Confirm Password"
-                    image={require("./../assets/images/locks.png")}
-                  />
-                </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <InputBox
-                    // name="Password"
-                    image={require("./../assets/images/locks.png")}
-                  />
-                  <InputBox
-                    // name="Confirm Password"
-                    image={require("./../assets/images/locks.png")}
-                  />
-                </View>
-                <TouchableOpacity>
-                  <View
+              <View
+                style={{
+                  marginTop: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  backgroundColor: Colors.INPUTBOX,
+                }}
+              >
+                <View style={{ width: "39%" }}>
+                  <RNPickerSelect
+                    placeholder={{ label: "+1" }}
+                    onValueChange={(value) => setselectedPrefix(value)}
+                    items={phonePrefixes}
                     style={{
-                      backgroundColor: Colors.APPCOLOR,
-                      paddingHorizontal: 60,
-                      height: 50,
+                      inputAndroid: {
+                        fontFamily: "outfit-bold", // for Android
+                        fontSize: 8,
+                        borderRadius: 10,
+                      },
+                    }}
+                  />
+                </View>
+                <InputBox
+                  extraStyle={{ width: "70%", backgroundColor: "none" }}
+                  handleTextChange={(value) => handleUserDetail("phone", value)}
+                  type="number"
+                  placeholder="*** *** ***"
+                />
+              </View>
+
+              <View style={styles.dropDown}>
+                <RNPickerSelect
+                  placeholder={{ label: "Country:" }}
+                  onValueChange={(value) => setSelectedCountry(value)}
+                  items={flags}
+                  style={{
+                    inputIOS: {
+                      fontFamily: "outfit-bold",
+                      fontSize: 14,
                       borderRadius: 10,
-                      marginVertical: 20,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      // marginTop: 60,
+                    },
+                    inputAndroid: {
+                      fontFamily: "outfit-bold",
+                      fontSize: 14,
+                      borderRadius: 10,
+                    },
+                  }}
+                />
+              </View>
+
+              <InputBox
+                handleTextChange={(value) =>
+                  handleUserDetail("password", value)
+                }
+                placeholder="Password"
+                type="password"
+              />
+
+              <InputBox
+                handleTextChange={(value) =>
+                  handleUserDetail("confirmPassword", value)
+                }
+                placeholder="Confirm Password"
+                type="password"
+              />
+
+              {passwordError ? (
+                <Text style={{ color: "red", textAlign: "center" }}>
+                  {passwordError}
+                </Text>
+              ) : null}
+
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={passwordError !== ""}
+              >
+                <View
+                  style={{
+                    backgroundColor:
+                      passwordError !== "" ? "gray" : Colors.APPCOLOR,
+                    paddingHorizontal: 60,
+                    height: 50,
+                    borderRadius: 10,
+                    marginVertical: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      fontFamily: "outfit-black",
                     }}
                   >
-                    <Text
-                      style={{
-                        textAlign: "center",
-                        fontFamily: "outfit-black",
-                      }}
-                    >
-                      Register
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </View>
-        </KeyboardAvoidingView>
-      </ScrollView>
+                    Register
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    height: 35,
-    width: 35,
-    margin: 15,
-  },
   container: {
+    paddingHorizontal: 15,
     flex: 1,
-    backgroundColor: Colors.APPDARKCOLOR,
-  },
-  imageSize: {
-    width: 200,
-    height: 200,
-    borderWidth: 3,
-  },
-  bottomContainer: {
-    paddingHorizontal: 20,
-    borderTopRightRadius: 20,
-    borderTopLeftRadius: 20,
-    marginTop: 7,
-    display: "flex",
-    flex: 1,
+    justifyContent: "space-between",
     backgroundColor: "#fff",
+  },
+  dropDown: {
+    marginTop: 10,
+    fontFamily: "outfit-bold",
+    fontSize: 14,
+    height: 50,
     width: "100%",
-    justifyContent: "flex-end",
+    backgroundColor: Colors.INPUTBOX,
+    borderRadius: 10,
   },
 });
