@@ -8,13 +8,50 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import React from "react";
+import React, { useContext, useEffect } from "react";
 import ButtonGreen from "./../components/ButtonGreen.jsx";
 import ButtonOutline from "../components/ButtonOutline.jsx";
 // import { StatusBar } from 'expo-status-bar'
 import { Colors } from "../constants/Colors.js";
+import LoginScreen from "./LoginScreen.jsx";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserContext } from "../context/UserContext.js";
 
 export default function HomeScreen({ navigation }) {
+  const {dispatch} = useContext(UserContext)
+  useEffect(() => {
+    async function checkUser() {
+      const userDataFetch = await AsyncStorage.getItem('userData');
+      if (!userDataFetch) {
+        return;
+      }
+     try {
+      const userData = JSON.parse(userDataFetch)
+      if (userData) {
+        
+          dispatch({ type: "login", payload: userData });
+          navigation.navigate("Bank");
+        
+        
+      }
+     } catch (error) {
+      console.error("Error parsing user data", error);
+     }
+    }
+    // async function clearAsyncStorage() {
+    //   try {
+    //     await AsyncStorage.clear();
+    //     console.log('AsyncStorage cleared');
+    //   } catch (e) {
+    //     console.error('Failed to clear AsyncStorage', e);
+    //   }
+    // }
+    // clearAsyncStorage()
+    checkUser();
+  }, [navigation, dispatch]);
+ 
+  
+
   return (
     <>
       <SafeAreaView style={styles.container}>

@@ -2,7 +2,7 @@ import { View, TextInput, StyleSheet, Image } from "react-native";
 import React from "react";
 import { Colors } from "../constants/Colors";
 
-export default function LoginInputBox({ name, placeholder, image, handleTextChange, value }) {
+export default function LoginInputBox({type, name, placeholder, image, handleTextChange, value }) {
   return (
     <View style={styles.container}>
       <View style={styles.inputContainer}>
@@ -10,6 +10,7 @@ export default function LoginInputBox({ name, placeholder, image, handleTextChan
           value={value}
           onChangeText={handleTextChange}
           style={styles.textInput}
+          secureTextEntry={type === "password" && true}
           placeholder={placeholder || name}
           placeholderTextColor={Colors.PLACEHOLDERTEXT} // Optional: Define a placeholder text color in your Colors
         />
@@ -37,11 +38,11 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontFamily: "outfit-bold",
-    fontSize: 16,
+    fontSize: 14,
     height: 50,
     width: "85%",
     backgroundColor: Colors.INPUTBOX,
-    borderWidth: 2,
+    // borderWidth: 2,
     borderColor: Colors.BOXOUTLINE,
     borderTopLeftRadius: 10,
     borderBottomLeftRadius: 10,
