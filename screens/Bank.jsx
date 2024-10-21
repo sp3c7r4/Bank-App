@@ -1,16 +1,20 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { Image, StyleSheet, Text, View } from 'react-native'
 import { UserContext } from '../context/UserContext'
+import useRefetchUser from '../hooks/useRefetchUser';
 
 export default function Bank() {
     const {currentUser} = useContext(UserContext);
-    console.log(currentUser)
+    const [isLoading, setIsLoading] = useState(false);
+    const {refetchUser} = useRefetchUser(setIsLoading);
+    useEffect(function(){
+      refetchUser()
+    }, [])
   return (
-    <View>
-        <Text>{currentUser.lastname}, {currentUser.firstname}</Text>
+    <View style={{backgroundColor: "red"}}>
+        <Text>{currentUser?.lastname}, {currentUser?.firstname}</Text>
         <Image style={styles.image} source={{uri: currentUser?.image_url}} />
     </View>
-
   )
 }
 const styles = StyleSheet.create({
