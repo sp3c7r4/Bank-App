@@ -36,7 +36,7 @@ export default function LoginScreen() {
       const { data } = loginResponse;
 
       if (data) {
-        console.log(data)
+        // console.log(data)
         dispatch({ type: "login", payload: data });
 
         if (data?.verified.toLowerCase() === "false") {

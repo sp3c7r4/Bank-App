@@ -13,7 +13,6 @@ import ButtonGreen from "./../components/ButtonGreen.jsx";
 import ButtonOutline from "../components/ButtonOutline.jsx";
 // import { StatusBar } from 'expo-status-bar'
 import { Colors } from "../constants/Colors.js";
-import LoginScreen from "./LoginScreen.jsx";
 
 export default function HomeScreen({ navigation }) {
   return (
@@ -70,7 +69,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-      <StatusBar style="auto" />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.BOXOUTLINE} />
     </>
   );
 }

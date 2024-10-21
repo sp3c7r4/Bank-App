@@ -13,6 +13,8 @@ import SetPin from "./screens/SetPin";
 import TabScreen from "./screens/TabScreen";
 import 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import TransferToMontreal from "./screens/Dashboard Components/TransferToMontreal";
 enableScreens();
 
 SplashScreen.preventAutoHideAsync();
@@ -21,7 +23,7 @@ SystemUI.setBackgroundColorAsync("black");
 export default function App() {
   const Stack = createNativeStackNavigator();
   const [loaded, error] = useFonts({
-    outfit: require("./assets/fonts/Outfit-Regular.ttf"),
+    "outfit": require("./assets/fonts/Outfit-Regular.ttf"),
     "outfit-medium": require("./assets/fonts/Outfit-Medium.ttf"),
     "outfit-bold": require("./assets/fonts/Outfit-Bold.ttf"),
     "outfit-black": require("./assets/fonts/Outfit-Black.ttf"),
@@ -37,24 +39,27 @@ export default function App() {
     return null;
   }
   return (
-   <UserContextProvider>
-     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          animationEnabled: false,
-          animation: "slide_from_right",
-          // customAnimationOnGesture: true,
-        }}
-      >
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Bank" component={Bank} />
-        <Stack.Screen name="Tab" component={TabScreen} />
-        <Stack.Screen name="SetPin" component={SetPin} />
-      </Stack.Navigator>
-    </NavigationContainer>
-   </UserContextProvider>
+    <GestureHandlerRootView>
+      <UserContextProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              animationEnabled: false,
+            }}
+          >
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Bank" component={Bank} />
+            <Stack.Screen name="Tab" component={TabScreen} />
+            <Stack.Screen name="SetPin" component={SetPin} />
+            <Stack.Screen options={{
+              animation: "slide_from_bottom",
+            }} name="ToBank" component={TransferToMontreal} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </UserContextProvider>
+    </GestureHandlerRootView>
   );
 }

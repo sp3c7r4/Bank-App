@@ -1,11 +1,28 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Dimensions, FlatList, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import { Colors } from '../../constants/Colors'
-
+import TransactionsTileList from './TransactionsTileList'
+import transactions from '../../transactions.json'
+const {height, width} = Dimensions.get("window")
 export default function TransactionTIle() {
   return (
     <View style={styles.container}>
-      <Text>TransactionTIle</Text>
+      <Text style={{paddingHorizontal: 15, fontFamily: "outfit-medium", fontSize: 13, paddingTop: 10}}>Recent Activities</Text>
+      <FlatList showsVerticalScrollIndicator={false} data={transactions.slice(0,5)} renderItem={({item, index}) => {
+          return (
+          <TransactionsTileList type={item.transaction_type} amount={item.amount} 
+          description={item.description} 
+          merchant={item.merchant}
+          asset={item.asset}
+          time={item.timestamp}
+          />
+          )
+        }} keyExtractor={item => item.timestamp} 
+        ListFooterComponent={() => (
+          <View style={{height: 50, backgroundColor: "#f0f2f5", alignItems: "center", justifyContent: "center"}}>
+            <Text style={{fontFamily: "outfit-medium", fontSize: 15}}>View more</Text>
+          </View>
+        )}
+        />
     </View>
   )
 }
@@ -13,14 +30,15 @@ export default function TransactionTIle() {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    height: 300,
+    height: height * 0.3,
     marginTop: 15,
     marginBottom: 11,
-    backgroundColor: "#fff", 
-    paddingHorizontal: 20, 
-    paddingVertical: 10,
-    borderRadius: 25,
-    flexDirection: "row",
-    gap: 48
+    backgroundColor: "#f0f2f5", 
+    // paddingHorizontal: 20, 
+    // paddingVertical: 10,
+    borderRadius: 10,
+    // flex: 2
+    // flexDirection: "row",
+    // gap: 48
   }
 })
