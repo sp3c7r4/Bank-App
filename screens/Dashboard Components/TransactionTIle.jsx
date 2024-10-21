@@ -3,7 +3,7 @@ import React from 'react'
 import TransactionsTileList from './TransactionsTileList'
 import transactions from '../../transactions.json'
 const {height, width} = Dimensions.get("window")
-export default function TransactionTIle() {
+export default function TransactionTile() {
   return (
     <View style={styles.container}>
       <Text style={{paddingHorizontal: 15, fontFamily: "outfit-medium", fontSize: 13, paddingTop: 10}}>Recent Activities</Text>
