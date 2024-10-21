@@ -106,7 +106,7 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-      <StatusBar style="auto" />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.BOXOUTLINE} />
     </>
   );
 }

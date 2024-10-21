@@ -27,8 +27,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.APPDARKCOLOR, 
     paddingHorizontal: 20, 
     paddingVertical: 10,
-    borderRadius: 25,
+    borderRadius: 15,
     flexDirection: "row",
-    gap: 48
+    gap: 65
   }
 }) 

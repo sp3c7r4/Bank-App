@@ -1,14 +1,29 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Colors } from '../../constants/Colors'
+import BottomSheet from '@gorhom/bottom-sheet';
 
+export function stylizeAmount(int){
+  let splits = int.toFixed(2).split(".")
+  let division = Math.floor(String(splits[0]).length / 3)
+  let convertedInteger = String(splits[0]) 
+  let value = ''
+  for (let i = 0; i < division; i++) {
+    let start = convertedInteger.length - (3 * (i + 1));
+    let end = convertedInteger.length - (3 * i);
+    value = ',' + convertedInteger.slice(start, end) + value;
+  }
+  value = convertedInteger.slice(0, convertedInteger.length % 3) + value;
+  if (value.startsWith(',')) {
+    value = value.slice(1);
+  }
+  // return value
+  return value + `.${splits[1]}`
+}
 
-
-export default function BalanceTile({ userInfo }) {
+export default function BalanceTile({ userInfo, moneyTransfer, moneyDeposit , moneyWithdraw, cryptoSwap, cryptoDeposit, cryptoP2P }) {
   const [swap, setSwap] = useState(false);
-  
-  const CryptoTile = ({userInfo}) => {
-  // console.log(userInfo.cryptos[0].btc_balance)
+  const CryptoTile = ({userInfo, cryptoSwap, cryptoDeposit, cryptoP2P}) => {
     return (
       <View style={styles.container}>
         <View style={{alignItems: "center"}}>
@@ -24,8 +39,8 @@ export default function BalanceTile({ userInfo }) {
           />
         </TouchableOpacity>
         </View>
-        <View style={{backgroundColor: Colors.APPCOLOR, height: 90, alignItems: "center", flex:1}}>
-          <View style={{flexDirection: "row", gap:7}}>
+        <View style={{backgroundColor: Colors.APPCOLOR, height: 90, alignItems: "center"  }}>
+          <View style={{flexDirection: "row", gap:10}}>
             <View>
               <Text style={{color: "black", fontFamily: 'outfit-black'}}>BTC</Text>
               <View style={{backgroundColor: "#fff", 
@@ -71,10 +86,13 @@ export default function BalanceTile({ userInfo }) {
               </View>
             </View>
           </View>
-          <Text style={{color: "#000", fontFamily: 'outfit-black', fontSize: 20, marginTop: 10}}>${userInfo.balance.toFixed(2)}</Text>
+          <Text style={{color: "#000", fontFamily: 'outfit-black', fontSize: 20, marginTop: 10}}>${
+          stylizeAmount(userInfo.balance)
+          }</Text>
         </View>
         <View style={{flexDirection: "row",justifyContent: "space-evenly", marginTop: 5}}>
-          <TouchableOpacity>
+          {/*Crypto Transfer*/}
+          <TouchableOpacity onPress={cryptoSwap}>
             <View style={{
               backgroundColor: Colors.BALANCETILEGREEN,
               padding: 7,
@@ -84,10 +102,11 @@ export default function BalanceTile({ userInfo }) {
               alignItems:"center",
               justifyContent: "center"
             }}>
-              <Text style={{fontFamily: "outfit-medium"}}>Transfer</Text>
+              <Text style={{fontFamily: "outfit-medium"}}>Swap</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/*Crypto Deposit*/}
+          <TouchableOpacity onPress={cryptoDeposit}>
             <View style={{
               backgroundColor: Colors.APPDARKCOLOR,
               padding: 7,
@@ -100,7 +119,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{fontFamily: "outfit-medium", color: "#fff"}}>Deposit</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/*Crypto Withdraw*/}
+          <TouchableOpacity onPress={cryptoP2P}>
             <View style={{
               backgroundColor: Colors.BALANCETILEGREEN,
               padding: 7,
@@ -110,7 +130,7 @@ export default function BalanceTile({ userInfo }) {
               alignItems:"center",
               justifyContent: "center"
             }}>
-              <Text style={{fontFamily: "outfit-medium"}}>Withdraw</Text>
+              <Text style={{fontFamily: "outfit-medium"}}>P2P</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -118,7 +138,7 @@ export default function BalanceTile({ userInfo }) {
     )
   }
 
-  const BalancesTile = ({ userInfo }) => {
+  const BalancesTile = ({ userInfo, moneyDeposit, moneyTransfer, moneyWithdraw }) => {
     return (
       <View style={styles.container}>
         <View style={{ alignItems: "center" }}>
@@ -137,13 +157,14 @@ export default function BalanceTile({ userInfo }) {
             />
           </TouchableOpacity>
         </View>
-        <View style={{ backgroundColor: Colors.APPCOLOR, height: 90, alignItems: "center" }}>
+        <View style={{ backgroundColor: Colors.APPCOLOR, height: 90, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: "#000", fontFamily: "outfit-black", fontSize: 35 }}>
-            ${userInfo.balance.toFixed(2)}
+            ${stylizeAmount(userInfo.balance)}
           </Text>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-evenly", marginTop: 5 }}>
-          <TouchableOpacity>
+          {/* Balance Transfer */}
+          <TouchableOpacity onPress={moneyTransfer}>
             <View
               style={{
                 backgroundColor: Colors.BALANCETILEGREEN,
@@ -158,7 +179,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{ fontFamily: "outfit-medium" }}>Transfer</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* Balance Deposit */}
+          <TouchableOpacity onPress={moneyDeposit}>
             <View
               style={{
                 backgroundColor: Colors.APPDARKCOLOR,
@@ -173,7 +195,8 @@ export default function BalanceTile({ userInfo }) {
               <Text style={{ fontFamily: "outfit-medium", color: "#fff" }}>Deposit</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* Balance Withdraw */}
+          <TouchableOpacity onPress={moneyWithdraw}>
             <View
               style={{
                 backgroundColor: Colors.BALANCETILEGREEN,
@@ -195,17 +218,18 @@ export default function BalanceTile({ userInfo }) {
 
   const styles = StyleSheet.create({
     container: {
-      marginTop: 20,
+      marginTop: 15,
       backgroundColor: Colors.APPCOLOR,
       width: "100%",
-      padding: 20,
-      borderRadius: 20,
+      padding: 15,
+      borderRadius: 10,
     },
   });
 
+  // const snapPoints = useMemo(() => ["25%", "50%", "70%"], []);
   return (
     <View>
-      {swap ? <CryptoTile userInfo={userInfo}/> : <BalancesTile userInfo={userInfo} />}
+      {swap ? <CryptoTile userInfo={userInfo} cryptoSwap={cryptoSwap} cryptoP2P={cryptoP2P} cryptoDeposit={cryptoDeposit}/> : <BalancesTile moneyTransfer={moneyTransfer} moneyWithdraw={moneyWithdraw} moneyDeposit={moneyDeposit} userInfo={userInfo}  />}
     </View>
   );
 }
