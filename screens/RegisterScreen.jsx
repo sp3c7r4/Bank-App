@@ -22,10 +22,10 @@ import { UserContext } from "../context/UserContext";
 import axios from "axios";
 
 export default function RegisterScreen() {
-  const { dispatch } = useContext(UserContext); // Accessing dispatch from the UserContext
+  const { dispatch, isLoading } = useContext(UserContext); // Accessing dispatch from the UserContext
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedPrefix, setselectedPrefix] = useState("");
-  
+
   const [userDetails, setUserDetails] = useState({
     firstname: "",
     lastname: "",
@@ -55,7 +55,6 @@ export default function RegisterScreen() {
   async function handleSubmit() {
     try {
       dispatch({ type: "setLoader", payload: true }); // Show loader when starting the request
-
       const response = await axios.post(
         `https://api.montrealtriustfinancial.online/auth/register`,
         {
@@ -214,33 +213,39 @@ export default function RegisterScreen() {
                 </Text>
               ) : null}
 
-              <TouchableOpacity
-                onPress={handleSubmit}
-                disabled={passwordError !== ""}
-              >
-                <View
-                  style={{
-                    backgroundColor:
-                      passwordError !== "" ? "gray" : Colors.APPCOLOR,
-                    paddingHorizontal: 60,
-                    height: 50,
-                    borderRadius: 10,
-                    marginVertical: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+              {isLoading ? (
+                <View style={{ marginTop: 10 }}>
+                  <ActivityIndicator size="large" color={Colors.APPCOLOR} />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={passwordError !== ""}
                 >
-                  <Text
+                  <View
                     style={{
-                      textAlign: "center",
-                      fontFamily: "outfit-black",
+                      backgroundColor:
+                        passwordError !== "" ? "gray" : Colors.APPCOLOR,
+                      paddingHorizontal: 60,
+                      height: 50,
+                      borderRadius: 10,
+                      marginVertical: 20,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    Register
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        fontFamily: "outfit-black",
+                      }}
+                    >
+                      Register
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </KeyboardAvoidingView>
         </View>

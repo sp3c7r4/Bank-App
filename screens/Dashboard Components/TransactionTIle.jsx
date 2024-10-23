@@ -1,30 +1,54 @@
-import { Dimensions, FlatList, StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import TransactionsTileList from './TransactionsTileList'
-import transactions from '../../transactions.json'
-const {height, width} = Dimensions.get("window")
+import { Dimensions, FlatList, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import TransactionsTileList from "./TransactionsTileList";
+import transactions from "../../transactions.json";
+const { height, width } = Dimensions.get("window");
 export default function TransactionTile() {
   return (
     <View style={styles.container}>
-      <Text style={{paddingHorizontal: 15, fontFamily: "outfit-medium", fontSize: 13, paddingTop: 10}}>Recent Activities</Text>
-      <FlatList showsVerticalScrollIndicator={false} data={transactions.slice(0,5)} renderItem={({item, index}) => {
+      <Text
+        style={{
+          paddingHorizontal: 15,
+          fontFamily: "outfit-medium",
+          fontSize: 13,
+          paddingTop: 10,
+        }}
+      >
+        Recent Activities
+      </Text>
+      <FlatList
+        showsVerticalScrollIndicator={false}
+        data={transactions.slice(0, 5)}
+        renderItem={({ item, index }) => {
           return (
-          <TransactionsTileList type={item.transaction_type} amount={item.amount} 
-          description={item.description} 
-          merchant={item.merchant}
-          asset={item.asset}
-          time={item.timestamp}
-          />
-          )
-        }} keyExtractor={item => item.timestamp} 
+            <TransactionsTileList
+              type={item.transaction_type}
+              amount={item.amount}
+              description={item.description}
+              merchant={item.merchant}
+              asset={item.asset}
+              time={item.timestamp}
+            />
+          );
+        }}
+        keyExtractor={(item) => item.timestamp}
         ListFooterComponent={() => (
-          <View style={{height: 50, backgroundColor: "#f0f2f5", alignItems: "center", justifyContent: "center"}}>
-            <Text style={{fontFamily: "outfit-medium", fontSize: 15}}>View more</Text>
+          <View
+            style={{
+              height: 50,
+              backgroundColor: "white",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontFamily: "outfit-medium", fontSize: 15 }}>
+              View more
+            </Text>
           </View>
         )}
-        />
+      />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -33,12 +57,12 @@ const styles = StyleSheet.create({
     height: height * 0.3,
     marginTop: 15,
     marginBottom: 11,
-    backgroundColor: "#f0f2f5", 
-    // paddingHorizontal: 20, 
+    backgroundColor: "white",
+    // paddingHorizontal: 20,
     // paddingVertical: 10,
     borderRadius: 10,
-    // flex: 2
+    flex: 1
     // flexDirection: "row",
     // gap: 48
-  }
-})
+  },
+});

@@ -51,7 +51,7 @@ export default function LoginScreen() {
         } else {
           await AsyncStorage.setItem("userData", JSON.stringify(data));
           dispatch({ type: "setLoader", payload: false });
-          return navigation.navigate("Bank");
+          return navigation.navigate("Tab");
         }
       } else {
         setTimeout(() => {
@@ -123,7 +123,6 @@ export default function LoginScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-
       <Otp email={email} />
       <SetPin />
     </SafeAreaView>

@@ -18,26 +18,25 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../context/UserContext.js";
 
 export default function HomeScreen({ navigation }) {
-  const {dispatch} = useContext(UserContext)
+  const { dispatch } = useContext(UserContext);
   useEffect(() => {
     async function checkUser() {
-      const userDataFetch = await AsyncStorage.getItem('userData');
+      const userDataFetch = await AsyncStorage.getItem("userData");
       if (!userDataFetch) {
         return;
       }
-     try {
-      const userData = JSON.parse(userDataFetch)
-      if (userData) {
-        
+      try {
+        const userData = JSON.parse(userDataFetch);
+        if (userData) {
           dispatch({ type: "login", payload: userData });
-          navigation.navigate("Bank");
-        
-        
+          navigation.navigate("Tab");
+        }
+      } catch (error) {
+        console.error("Error parsing user data", error);
       }
-     } catch (error) {
-      console.error("Error parsing user data", error);
-     }
     }
+
+    checkUser();
     // async function clearAsyncStorage() {
     //   try {
     //     await AsyncStorage.clear();
@@ -47,10 +46,7 @@ export default function HomeScreen({ navigation }) {
     //   }
     // }
     // clearAsyncStorage()
-    checkUser();
   }, [navigation, dispatch]);
- 
-  
 
   return (
     <>
@@ -98,7 +94,7 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
         <View style={[styles.buttonLayout, { marginBottom: 40 }]}>
-          <TouchableOpacity onPress={() => navigation.navigate("Tab")}>
+          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
             <ButtonGreen text="Login" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate("Register")}>

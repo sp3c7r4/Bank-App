@@ -1,9 +1,9 @@
-import React, { useRef, useState, useEffect, useState } from "react";
+import React, { useRef, useState, useEffect, useContext } from "react";
 import { Text, StyleSheet, View } from "react-native";
 import Header from "../Dashboard Components/Header";
 import BalanceTile from "../Dashboard Components/BalanceTile";
 import MiddleTile from "../Dashboard Components/MiddleTile";
-import TransactionTile from "../Dashboard Components/TransactionTile.jsx";
+import TransactionTile from "../Dashboard Components/TransactionTIle.jsx";
 import {
   BottomSheetModal,
   BottomSheetModalProvider,
@@ -15,38 +15,39 @@ import ModalStack from "../Dashboard Components/ModalStack.jsx";
 import { useNavigation } from "@react-navigation/native";
 // import TransactionTIle from '../Dashboard Components/TransactionTIle';
 import useRefetchUser from "../../hooks/useRefetchUser";
+import { UserContext } from "../../context/UserContext.js";
 
-export const data = {
-  accnumber: 8697322891,
-  address: "439 Harrison Street Webster, NY 14580",
-  balance: 752579.1131401936,
-  country: "Nigeria",
-  cryptos: [
-    {
-      bnb_balance: 0,
-      btc_balance: 1.324788258973016,
-      eth_balance: 0.8615410317474865,
-      id: 18,
-      usdt_balance: 0,
-      user_email: "sarafasatar@gmail.com",
-    },
-  ],
-  email: "sarafasatar@gmail.com",
-  firstname: "Spectras",
-  identification_state: false,
-  identification_type: null,
-  image_url:
-    "https://pbs.twimg.com/profile_images/1366466342354751491/JyhZpbtu_400x400.jpg",
-  is_admin: false,
-  lastname: "Gee",
-  level: "premium",
-  phone: "+12222222222",
-  pin: "True",
-  ssn: "9999999999999",
-  status: "active",
-  username: "Sp3c7r4",
-  verified: "True",
-};
+// export const data = {
+//   accnumber: 8697322891,
+//   address: "439 Harrison Street Webster, NY 14580",
+//   balance: 752579.1131401936,
+//   country: "Nigeria",
+//   cryptos: [
+//     {
+//       bnb_balance: 0,
+//       btc_balance: 1.324788258973016,
+//       eth_balance: 0.8615410317474865,
+//       id: 18,
+//       usdt_balance: 0,
+//       user_email: "sarafasatar@gmail.com",
+//     },
+//   ],
+//   email: "sarafasatar@gmail.com",
+//   firstname: "Spectras",
+//   identification_state: false,
+//   identification_type: null,
+//   image_url:
+//     "https://pbs.twimg.com/profile_images/1366466342354751491/JyhZpbtu_400x400.jpg",
+//   is_admin: false,
+//   lastname: "Gee",
+//   level: "premium",
+//   phone: "+12222222222",
+//   pin: "True",
+//   ssn: "9999999999999",
+//   status: "active",
+//   username: "Sp3c7r4",
+//   verified: "True",
+// };
 
 export default function Bank() {
   const navigation = useNavigation();
@@ -54,6 +55,12 @@ export default function Bank() {
   const [modalVisible, setModalVisible] = useState(false);
 
   const bottomSheetRef = useRef(null);
+  const { currentUser } = useContext(UserContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const { refetchUser } = useRefetchUser(setIsLoading);
+  useEffect(function () {
+    refetchUser();
+  }, []);
   const snapPoints = ["45%", "90%"];
   function handlePresentModal(mode) {
     setMode(mode);
@@ -70,34 +77,31 @@ export default function Bank() {
   const handleBlur = () => {
     bottomSheetRef.current?.snapTo(0); // Scroll back to 25% snap point (index 0)
   };
-  // console.log(mode)
 
-  // const {currentUser} = useContext(UserContext);
-  // console.log(currentUser)
-  const { currentUser } = useContext(UserContext);
-  const [isLoading, setIsLoading] = useState(false);
-  const { refetchUser } = useRefetchUser(setIsLoading);
-  useEffect(function () {
-    refetchUser();
-  }, []);
   return (
     <>
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
-        <Header userInfo={data} />
-        <View style={{ paddingHorizontal: 12 }}>
+      <View style={{ flex: 1, backgroundColor: "#f8f8fb" }}>
+        <Header userInfo={currentUser} />
+        <View
+          style={{ paddingHorizontal: 12, flex: 1, }}
+        >
           {/* <ScrollView showsVerticalScrollIndicator={false}> */}
-          <BalanceTile
-            userInfo={data}
-            // CryptoButtonTile={() => handlePresentModal('transfer')}
-            moneyWithdraw={() => handlePresentModal("withdraw")}
-            moneyTransfer={() => handlePresentModal("transfer")}
-            cryptoSwap={() => handlePresentModal("cryptoSwap")}
-            cryptoP2P={() => handlePresentModal("cryptoP2P")}
-            moneyDeposit={() => setModalVisible(true)}
-            cryptoDeposit={() => setModalVisible(true)}
-          />
-          <MiddleTile />
-          <View style={{}}>
+          <View style={{ flex: 1.5 }}>
+            <BalanceTile
+              userInfo={currentUser}
+              // CryptoButtonTile={() => handlePresentModal('transfer')}
+              moneyWithdraw={() => handlePresentModal("withdraw")}
+              moneyTransfer={() => handlePresentModal("transfer")}
+              cryptoSwap={() => handlePresentModal("cryptoSwap")}
+              cryptoP2P={() => handlePresentModal("cryptoP2P")}
+              moneyDeposit={() => setModalVisible(true)}
+              cryptoDeposit={() => setModalVisible(true)}
+            />
+          </View>
+          <View style={{ flex: 0.7 }}>
+            <MiddleTile />
+          </View>
+          <View style={{ flex: 3 }}>
             <TransactionTile />
           </View>
           {/* </ScrollView> */}
