@@ -1,14 +1,16 @@
 import { Dimensions, StyleSheet, Text, View, FlatList } from "react-native";
-import React from "react";
+import React, { useContext } from "react";
 import CustomHeader from "../Transactions/CustomHeader";
 import TransactionsTile from "../Transactions/TransactionsTile";
-import transactions from "./../../transactions.json";
+import { UserContext } from "../../context/UserContext";
+// import transactions from "./../../transactions.json";
 
 // console.log(transactions)
 const { width } = Dimensions.get("window");
 // console.log(transactions);
 // console.log(width)
 export default function Transactions() {
+  const {transactions} = useContext(UserContext)
   return (
     <View style={{ backgroundColor: "#fff", flex: 1 }}>
       <CustomHeader />

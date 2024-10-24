@@ -1,9 +1,11 @@
 import { Dimensions, FlatList, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useContext } from "react";
 import TransactionsTileList from "./TransactionsTileList";
-import transactions from "../../transactions.json";
+// import transactions from "../../transactions.json";
+import { UserContext } from "../../context/UserContext";
 const { height, width } = Dimensions.get("window");
 export default function TransactionTile() {
+  const {transactions}= useContext(UserContext)
   return (
     <View style={styles.container}>
       <Text

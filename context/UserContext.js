@@ -7,6 +7,7 @@ const initialState = {
   userPin: "",
   pinPage: false,
   otpPage: false,
+  transactions: [],
 };
 function reducer(state, action) {
   switch (action.type) {
@@ -22,14 +23,26 @@ function reducer(state, action) {
       return { ...state, pinPage: action.payload };
     case "setOtpPage":
       return { ...state, otpPage: action.payload };
+    case "setTransactions":
+      return { ...state, transactions: action.payload };
   }
 }
 function UserContextProvider({ children }) {
-  const [{ currentUser, isLoading, userPin, pinPage, otpPage }, dispatch] =
-    useReducer(reducer, initialState);
+  const [
+    { currentUser, isLoading, userPin, pinPage, otpPage, transactions },
+    dispatch,
+  ] = useReducer(reducer, initialState);
   return (
     <UserContext.Provider
-      value={{ currentUser, isLoading, dispatch, userPin, pinPage, otpPage }}
+      value={{
+        currentUser,
+        isLoading,
+        dispatch,
+        userPin,
+        pinPage,
+        otpPage,
+        transactions,
+      }}
     >
       {children}
     </UserContext.Provider>

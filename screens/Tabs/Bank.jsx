@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 // import TransactionTIle from '../Dashboard Components/TransactionTIle';
 import useRefetchUser from "../../hooks/useRefetchUser";
 import { UserContext } from "../../context/UserContext.js";
+import useRefetchTransactions from "../../hooks/useFetchTransactions.js";
 
 // export const data = {
 //   accnumber: 8697322891,
@@ -57,9 +58,12 @@ export default function Bank() {
   const bottomSheetRef = useRef(null);
   const { currentUser } = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const { refetchUser } = useRefetchUser(setIsLoading);
+  const { refetchTransactions } = useRefetchTransactions(setIsLoadingTransactions);
   useEffect(function () {
     refetchUser();
+    refetchTransactions()
     closePresentModal();
   }, []);
   const snapPoints = ["45%", "90%"];
