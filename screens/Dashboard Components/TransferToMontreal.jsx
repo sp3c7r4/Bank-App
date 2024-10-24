@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Keyboard, // Import Keyboard
 } from "react-native";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { TextInput } from "react-native-gesture-handler";
@@ -17,75 +18,142 @@ import {
 } from "@gorhom/bottom-sheet";
 import { UserContext } from "../../context/UserContext";
 import useRefetchUser from "../../hooks/useRefetchUser";
+import axios from "axios";
+import { stylizeAmount } from "./BalanceTile";
 
 export default function TransferToMontreal({ navigation }) {
   const { height, width } = Dimensions.get("window");
-  const {currentUser} = useContext(UserContext)
-  const bottomSheetRef = useRef(null);
+  const { currentUser } = useContext(UserContext);
   const [amount, setAmount] = useState("");
   const [pin, setPinState] = useState([]);
-  const [recipientAccount, setRecipientAccount] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const {refetchUser} = useRefetchUser(setIsLoading)
-  // const pin = []
-  
-  useEffect(function(){
+  const [recipientAccount, setRecipientAccount] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { refetchUser } = useRefetchUser(setIsLoading);
+  const bottomSheetRefPin = useRef(null);
+  const bottomSheetRefConfirm = useRef(null);
+  const [transferError, setTransferError] = useState("");
+  const [transactiondetail, setTransactionDetail] = useState(null);
+  function handlePresentModalPin() {
+    bottomSheetRefPin.current?.present();
+  }
+  function handlePresentModalConfirm() {
+    bottomSheetRefConfirm.current?.present();
+  }
+  function closePresentModalPin() {
+    bottomSheetRefPin.current?.close();
+    setPinState([]);
+  }
+
+  useEffect(() => {
     async function submitPin() {
       if (pin.length !== 4) {
-        return
+        return;
       }
-      console.log("checking...")
-      const pinForTrans = pin.join("")
+      console.log("checking...");
+      const pinForTrans = pin.join("");
 
       try {
-        setIsLoading(true)
+        setIsLoading(true);
         const transactionSetResponse = await axios.post(
           `https://api.montrealtriustfinancial.online/currency/money/send`,
           {
             email: currentUser?.email,
             accountNumber: Number(recipientAccount),
             amount: Number(amount),
-            pin: Number(pinForTrans)
+            pin: Number(pinForTrans),
           }
         );
-        console.log(transactionSetResponse);
-        
-        if (transactionSetResponse.status >= 200 && transactionSetResponse.status < 300) {
-          if(transactionSetResponse.data.message.toLowerCase() === "transaction successful"){
-            // setconfirmPinForAmount(false);
-            // setReceiptPage(true);
-            setIsLoading(false)
+        console.log(transactionSetResponse.data);
+
+        if (
+          transactionSetResponse.status >= 200 &&
+          transactionSetResponse.status < 300
+        ) {
+          if (
+            transactionSetResponse.data.message.toLowerCase() ===
+            "transaction successful"
+          ) {
+            setIsLoading(false);
+            closePresentModalPin();
+            navigation.navigate("Tab")
             refetchUser();
-          }else{
-            setIsLoading(false)
-            // setconfirmPinForAmount(false);
-            // setFailedReceiptPage(true)
+          } else {
+            setTransferError(transactionSetResponse.data.message);
+            closePresentModalPin();
+            setIsLoading(false);
           }
-          // localStorage.removeItem("transactions");
-          // localStorage.removeItem("transactions_timestamp");
           return;
         }
       } catch (err) {
-        console.log(err)
+        setTransferError("Transaction failed. Try again later.");
+        closePresentModalPin();
       }
     }
-    submitPin()
-  }, [pin])
-  async function setPin(input){
+    submitPin();
+  }, [pin]);
+  useEffect(
+    function () {
+      setTimeout(() => {
+        setTransferError("");
+      }, 5000);
+    },
+    [transferError]
+  );
+  // function handleAmountChange(){
+
+  // }
+
+  async function handleSubmit() {
+    // Check if the receiver account number is valid
+    if (recipientAccount.length >= 10) {
+      if(amount){
+        if(amount <= currentUser?.balance){
+          try {
+            const response = await axios.post(
+              `https://api.montrealtriustfinancial.online/verify/accountnumber`,
+              {
+                accountNumber: Number(recipientAccount),
+              }
+            );
+            if (response.data) {
+              setTransactionDetail({
+                receiverAccountName: response?.data.name,
+                receiverAccountNumber: response?.data.accnumber,
+                receiverBank: "Montreal",
+                transferType: "account",
+              });
+              handlePresentModalConfirm();
+            } else {
+              setTransferError("User not found");
+              return;
+            }
+          } catch (err) {
+            console.error("Error verifying account number:", err);
+            setTransferError(
+              err.response?.data?.message ||
+                "Please check the account and try again."
+            );
+          }
+        }else{
+          setTransferError("Insufficient funds.")
+        }
+      }else{
+        setTransferError("Please enter an amount.")
+      }
+    } else {
+      // setCustomerCareMessage(`Transfer to ${receiverAccountName} ${receiverAccountNumber}, ${receiverBank}`)
+      // setCustomerCarePage(true)
+      setTransferError("Please enter a valid account");
+    }
+  }
+
+  async function setPin(input) {
     if (pin.length !== 4) {
       const newPin = [...pin, input];
       setPinState(newPin);
     }
-    
-  };
-  const stylizeAmounts = (intake) => {
-    let input = intake.replace(/,/g, ""); // Remove all commas
-    let value = parseFloat(input).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    setAmount(value);
-  };
+  }
+
   const removePin = () => {
     setPinState((prevPin) => {
       const newPin = [...prevPin];
@@ -93,16 +161,13 @@ export default function TransferToMontreal({ navigation }) {
       return newPin;
     });
   };
+
   const snapPoints = ["57%"];
-  function handlePresentModal() {
-    bottomSheetRef.current?.present();
-  }
-  function closePresentModal() {
-    bottomSheetRef.current?.close();
-    setPinState([]);
-  }
+
   return (
-    <View style={{ backgroundColor: "#f8f8fb", flex: 1, paddingHorizontal: 20 }}>
+    <View
+      style={{ backgroundColor: "#f8f8fb", flex: 1, paddingHorizontal: 20 }}
+    >
       <View>
         <View>
           <Pressable
@@ -135,9 +200,12 @@ export default function TransferToMontreal({ navigation }) {
                 marginTop: 5,
               }}
             >
-              <TextInput onChangeText={setRecipientAccount} placeholder="eg. 12345678" />
+              <TextInput
+                keyboardType="numeric"
+                onChangeText={setRecipientAccount}
+                placeholder="eg. 12345678"
+              />
             </View>
-            {/*<Text style={{fontFamily: "outfit-medium", alignSelf: "flex-end", color: Colors.APPCOLOR, fontSize: 12, marginVertical: 3}}>HABEEB OKE</Text> */}
           </View>
           <View
             style={{
@@ -176,9 +244,6 @@ export default function TransferToMontreal({ navigation }) {
             <View style={{ flexDirection: "row", gap: 10 }}>
               <View
                 style={{
-                  backgroundColor: "#f0f2f5",
-                  borderRadius: 8,
-                  padding: 5,
                   marginTop: 5,
                   width: 30,
                   height: 40,
@@ -220,33 +285,37 @@ export default function TransferToMontreal({ navigation }) {
             <View
               style={{
                 marginTop: 12.5,
-                marginBotom: 0,
-                paddingBottom: 0,
                 flexDirection: "row",
                 gap: 5,
               }}
             >
-              {["$500", "$1000", "$1500", "$2000"].map((amount, index) => (
-                <View
-                  key={index}
-                  style={{
-                    backgroundColor: Colors.APPCOLOR,
-                    borderWidth: 1.5,
-                    borderRadius: 10,
-                    paddingHorizontal: 11,
-                    height: 30,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontFamily: "outfit-medium", fontSize: 12 }}>
-                    {amount}
-                  </Text>
-                </View>
+              {["500", "1000", "1500", "2000"].map((amount, index) => (
+                <TouchableOpacity key={index} onPress={() => setAmount(amount)}>
+                  <View
+                    style={{
+                      backgroundColor: "#f8f8fb",
+                      borderRadius: 10,
+                      paddingHorizontal: 11,
+                      height: 30,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontFamily: "outfit-medium", fontSize: 12 }}>
+                      ${amount}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               ))}
             </View>
+            <Text style={{textAlign: "center", color: "red", paddingVertical:10}}>{transferError}</Text>
           </View>
-          <TouchableOpacity onPress={() => handlePresentModal()}>
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss(); // Dismiss keyboard when confirm is pressed
+              handleSubmit();
+            }}
+          >
             <View
               style={{
                 backgroundColor: Colors.APPCOLOR,
@@ -263,48 +332,571 @@ export default function TransferToMontreal({ navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-      <BottomSheetModalProvider>
-        <View>
-          <BottomSheetModal
-            ref={bottomSheetRef}
-            handleIndicatorStyle={{ display: "none" }}
-            index={0}
-            enablePanDownToClose={true}
-            snapPoints={snapPoints}
-            backdropComponent={({ style }) => <View style={styles.backdrop} />}
-            backgroundStyle={styles.bottomSheetBackground}
-          >
-            {/*Header*/}
+      <BottomModalSheetPin
+        bottomSheetRefPin={bottomSheetRefPin}
+        snapPoints={snapPoints}
+        pin={pin}
+        removePin={removePin}
+        height={height}
+        width={width}
+        setPin={setPin}
+        setPinState={setPinState}
+        closePresentModal={closePresentModalPin}
+      />
+      <BottomModalSheetConfirm
+        bottomSheetRefConfirm={bottomSheetRefConfirm}
+        handlePresentModalPin={handlePresentModalPin}
+        snapPoints={snapPoints}
+        pin={pin}
+        removePin={removePin}
+        height={height}
+        width={width}
+        amount={amount}
+        transactionDetail={transactiondetail}
+      />
+    </View>
+  );
+}
+
+const BottomModalSheetPin = function ({
+  bottomSheetRefPin,
+  snapPoints,
+  pin,
+  setPin,
+  removePin,
+  setPinState,
+  height,
+  width,
+  closePresentModal
+}) {
+  return (
+    <BottomSheetModalProvider>
+      <View>
+        <BottomSheetModal
+          ref={bottomSheetRefPin}
+          handleIndicatorStyle={{ display: "none" }}
+          index={0}
+          enablePanDownToClose={true}
+          snapPoints={snapPoints}
+          backdropComponent={({ style }) => <View style={styles.backdrop} />}
+          backgroundStyle={styles.bottomSheetBackground}
+        >
+          {/*Header*/}
+          <View>
             <View>
-              <View>
-                <Text
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontFamily: "outfit-medium",
+                  marginTop: 5,
+                }}
+              >
+                Enter Payment PIN
+              </Text>
+            </View>
+            <View>
+              <Pressable onPress={() => closePresentModal()}>
+                <Image
                   style={{
-                    textAlign: "center",
-                    fontFamily: "outfit-medium",
-                    marginTop: 5,
+                    width: 20,
+                    height: 20,
+                    alignSelf: "flex-end",
+                    position: "absolute",
+                    bottom: 2,
+                    right: 10,
+                  }}
+                  source={require("./../../assets/images/close_button_green_1.png")}
+                />
+              </Pressable>
+            </View>
+          </View>
+          {/*End Header*/}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+              marginHorizontal: 50,
+              marginTop: 15,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: "#f0f2f5",
+                borderRadius: 10,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "outfit-bold",
+                  fontSize: 15,
+                  color: "#000",
+                }}
+              >
+                {pin[0] ? "*" : ""}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: "#f0f2f5",
+                borderRadius: 10,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10,
+              }}
+            >
+              <Text style={{ fontFamily: "outfit-bold", fontSize: 17 }}>
+                {pin[1] ? "*" : ""}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: "#f0f2f5",
+                borderRadius: 10,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10,
+              }}
+            >
+              <Text style={{ fontFamily: "outfit-bold", fontSize: 17 }}>
+                {pin[2]? "*" : ""}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: "#f0f2f5",
+                borderRadius: 10,
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10,
+              }}
+            >
+              <Text style={{ fontFamily: "outfit-bold", fontSize: 17 }}>
+                {pin[3]? "*" : ""}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              backgroundColor: "white",
+              width: "100%",
+              flex: 1,
+              marginTop: 20,
+            }}
+          >
+            <Text
+              style={{
+                textAlign: "center",
+                marginVertical: 5,
+                fontFamily: "outfit",
+                fontStyle: "italic",
+              }}
+            >
+              Secured by Montreal encrypt
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                margin: 5,
+              }}
+            >
+              <TouchableOpacity onPress={() => setPin("1")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
                   }}
                 >
-                  Enter Payment PIN
-                </Text>
-              </View>
-              <View>
-                <Pressable onPress={() => closePresentModal()}>
-                  <Image
+                  <Text
                     style={{
-                      width: 20,
-                      height: 20,
-                      alignSelf: "flex-end",
-                      position: "absolute",
-                      bottom: 2,
-                      right: 10,
+                      fontFamily: "outfit-bold",
+                      fontSize: 20,
+                      color: Colors.APPDARKCOLOR,
                     }}
-                    source={require("./../../assets/images/close_button_green_1.png")}
+                  >
+                    1
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPin("2")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    2
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPin("3")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    3
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                margin: 5,
+              }}
+            >
+              <TouchableOpacity onPress={() => setPin("4")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "outfit-bold",
+                      fontSize: 20,
+                      color: Colors.APPDARKCOLOR,
+                    }}
+                  >
+                    4
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPin("5")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    5
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPin("6")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    6
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                margin: 5,
+              }}
+            >
+              <TouchableOpacity onPress={() => setPin("7")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "outfit-bold",
+                      fontSize: 20,
+                      color: Colors.APPDARKCOLOR,
+                    }}
+                  >
+                    7
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPin("8")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    8
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPin("9")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    9
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                margin: 5,
+              }}
+            >
+              <TouchableOpacity onPress={() => setPin("0")}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.63,
+                  }}
+                >
+                  <Text style={{ fontFamily: "outfit-bold", fontSize: 20 }}>
+                    0
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <Pressable onPress={() => removePin()}>
+                <View
+                  style={{
+                    backgroundColor: "#f8f8fb",
+                    borderRadius: 10,
+                    padding: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: width * 0.3,
+                  }}
+                >
+                  <Image
+                    style={{ width: 30, height: 30 }}
+                    resizeMode="contain"
+                    source={require("./../../assets/images/back_space_1.png")}
                   />
-                </Pressable>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </BottomSheetModal>
+      </View>
+    </BottomSheetModalProvider>
+  );
+};
+const BottomModalSheetConfirm = function ({
+  bottomSheetRefConfirm,
+  snapPoints,
+  height,
+  width,
+  handlePresentModalPin,
+  amount,
+  transactionDetail
+}) {
+  const { currentUser } = useContext(UserContext);
+  function closePresentModal() {
+    bottomSheetRefConfirm.current?.close();
+  }
+  return (
+    <BottomSheetModalProvider>
+      <View>
+        <BottomSheetModal
+          ref={bottomSheetRefConfirm}
+          handleIndicatorStyle={{ display: "none" }}
+          index={0}
+          enablePanDownToClose={true}
+          snapPoints={snapPoints}
+          backdropComponent={({ style }) => <View style={styles.backdrop} />}
+          backgroundStyle={styles.bottomSheetBackground}
+        >
+          {/*Header*/}
+          <View>
+            <Pressable
+              style={{ paddingRight: 10 }}
+              onPress={() => closePresentModal()}
+            >
+              <Image
+                style={{
+                  width: 20,
+                  height: 20,
+                  alignSelf: "flex-end",
+                  // position: "absolute",
+                  // bottom: 2,
+                  // right: 10,
+                }}
+                source={require("./../../assets/images/close_button_green_1.png")}
+              />
+            </Pressable>
+          </View>
+          <View>
+            <View>
+              <Text
+                style={{
+                  fontFamily: "outfit-medium",
+                  textAlign: "center",
+                  fontSize: 30,
+                }}
+              >
+                $
+                <Text
+                  style={{
+                    fontFamily: "outfit-medium",
+                    marginTop: 5,
+                    fontSize: 50,
+                    // color: Colors.APPCOLOR,
+                  }}
+                >
+                  {amount}
+                </Text>
+              </Text>
+            </View>
+          </View>
+          {/*End Header*/}
+          <View style={{ paddingHorizontal: 10 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+              }}
+            >
+              <Text>Account Number</Text>
+              <Text>{transactionDetail?.receiverAccountNumber}</Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+              }}
+            >
+              <Text>Name</Text>
+              <Text>{transactionDetail?.receiverAccountName}</Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+              }}
+            >
+              <Text>Amount</Text>
+              <Text>${amount}</Text>
+            </View>
+            <View style={{ height: 100, paddingVertical: 10 }}>
+              <Text style={{ fontFamily: "outfit-medium" }}>
+                Payment Method
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#f8f8fb",
+                  paddingVertical: 18,
+                  marginTop: 10,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                }}
+              >
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={{ fontFamily: "outfit-medium" }}>Wallet </Text>
+                  <View style={{ opacity: 0.7 }}>
+                    <Text>
+                      {"("}${stylizeAmount(currentUser?.balance)}
+                      {")"}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
-            {/*End Header*/}
-            <View
+          </View>
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              marginVertical: "auto",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                closePresentModal();
+                handlePresentModalPin();
+              }}
+              style={{
+                padding: 20,
+                backgroundColor: Colors.APPCOLOR,
+                width: "80%",
+                borderRadius: 999,
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontFamily: "outfit-bold",
+                  color: "white",
+                  fontSize: 18,
+                }}
+              >
+                Pay
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {/* <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-around",
@@ -378,9 +970,9 @@ export default function TransferToMontreal({ navigation }) {
                   {pin[3]}
                 </Text>
               </View>
-            </View>
+            </View> */}
 
-            <View
+          {/* <View
               style={{
                 backgroundColor: "white",
                 width: "100%",
@@ -627,13 +1219,12 @@ export default function TransferToMontreal({ navigation }) {
                   </View>
                 </Pressable>
               </View>
-            </View>
-          </BottomSheetModal>
-        </View>
-      </BottomSheetModalProvider>
-    </View>
+            </View> */}
+        </BottomSheetModal>
+      </View>
+    </BottomSheetModalProvider>
   );
-}
+};
 
 const styles = StyleSheet.create({
   backdrop: {

@@ -60,11 +60,15 @@ export default function Bank() {
   const { refetchUser } = useRefetchUser(setIsLoading);
   useEffect(function () {
     refetchUser();
+    closePresentModal();
   }, []);
   const snapPoints = ["45%", "90%"];
   function handlePresentModal(mode) {
     setMode(mode);
     bottomSheetRef.current?.present();
+  }
+  function closePresentModal() {
+    bottomSheetRef.current?.close();
   }
   function navigateToTransferScreen() {
     bottomSheetRef.current?.close();

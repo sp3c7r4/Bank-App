@@ -127,7 +127,7 @@ const BalancesTile = ({
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-evenly",
+          justifyContent: "space-between",
           marginTop: 5,
         }}
       >
@@ -405,7 +405,7 @@ const CryptoTile = ({
                     (userInfo?.cryptos[0]?.bnb_balance
                       ? userInfo?.cryptos[0]?.bnb_balance.toFixed(6)
                       : "0.00")}
-                  {displayCp === "bnb" &&
+                  {displayCp === "usdt" &&
                     (userInfo?.cryptos[0]?.usdt_balance
                       ? userInfo?.cryptos[0]?.usdt_balance.toFixed(6)
                       : "0.00")}

@@ -14,6 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import TransferToMontreal from "./screens/Dashboard Components/TransferToMontreal";
 import TabScreen from "./screens/TabScreen";
 import Bank from "./screens/Tabs/Bank";
+import CryptoContextProvider from "./context/CryptoContext";
 enableScreens();
 
 SplashScreen.preventAutoHideAsync();
@@ -40,6 +41,7 @@ export default function App() {
   return (
     <GestureHandlerRootView>
       <UserContextProvider>
+        <CryptoContextProvider>
         <NavigationContainer>
           <Stack.Navigator
             screenOptions={{
@@ -57,6 +59,7 @@ export default function App() {
             }} name="ToBank" component={TransferToMontreal} />
           </Stack.Navigator>
         </NavigationContainer>
+        </CryptoContextProvider>
       </UserContextProvider>
     </GestureHandlerRootView>
   );
