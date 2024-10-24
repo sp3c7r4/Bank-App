@@ -5,6 +5,7 @@ import {
   Pressable,
   TextInput,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect, useContext } from "react";
 import { Colors } from "../../constants/Colors";
@@ -16,7 +17,7 @@ import axios from "axios";
 import useRefetchUser from "../../hooks/useRefetchUser";
 import Slider from "@react-native-community/slider";
 
-export default function CryptoButtonTile({ buttonSwapMode }) {
+export default function CryptoButtonTile({ buttonSwapMode, closePresentModal }) {
   const [toggle, setToggle] = useState("swap");
   const { currentUser } = useContext(UserContext);
   const { dispatch, allCryptoCurrencies } = useContext(CryptoContext);
@@ -26,6 +27,7 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
   const [toCrypto, setToCrypto] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { refetchUser } = useRefetchUser(setIsLoading);
+  const [transactionError, setTransactionError] = useState("");
   const userCryptoCurrencies = [
     {
       symbol: "BTC",
@@ -46,6 +48,14 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
   ];
 
   // console.log(buttonSwapMode)
+  useEffect(
+    function () {
+      setTimeout(() => {
+        setTransactionError("");
+      }, 3000);
+    },
+    [transactionError]
+  );
   useEffect(function () {
     dispatch({ type: "setCryptoInView", payload: true });
   }, []);
@@ -56,28 +66,49 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
   }, [buttonSwapMode]);
 
   useEffect(() => {
-    const equUsd = allCryptoCurrencies.find(
-      (crp) => crp?.symbol === selectedCrypto
-    );
-    if (selectedCrypto && equUsd.priceUsd && !isNaN(usdvalue)) {
-      setCryptoValue(+usdvalue / +equUsd.priceUsd);
-    } else {
-      setCryptoValue("");
-    }
-  }, [usdvalue, selectedCrypto]);
-  useEffect(
-    function () {
+    function handleCryptoBuy() {
       const equUsd = allCryptoCurrencies.find(
         (crp) => crp?.symbol === selectedCrypto
       );
+      if (selectedCrypto && equUsd.priceUsd && !isNaN(usdvalue)) {
+        setCryptoValue(`${+usdvalue / +equUsd.priceUsd}`);
+      } else {
+        setCryptoValue("");
+      }
+    }
+    function handleCryptoSell() {
+      const equUsd = allCryptoCurrencies.find(
+        (crp) => crp?.symbol === selectedCrypto
+      );
+      // console.log(equUsd)
       if (selectedCrypto && equUsd.priceUsd && !isNaN(cryptovalue)) {
-        setUsdValue(+cryptovalue * +equUsd.priceUsd);
+        const newUsdValue = Number(cryptovalue) * Number(equUsd.priceUsd);
+        // console.log(newUsdValue)
+        setUsdValue(`${newUsdValue}`);
       } else {
         setUsdValue("");
       }
-    },
-    [cryptovalue, selectedCrypto]
-  );
+    }
+    if (toCrypto) {
+      handleCryptoBuy();
+    } else {
+      // console.log("sellling");
+      handleCryptoSell();
+    }
+  }, [usdvalue, cryptovalue, selectedCrypto]);
+  // useEffect(
+  //   function () {
+  //     const equUsd = allCryptoCurrencies.find(
+  //       (crp) => crp?.symbol === selectedCrypto
+  //     );
+  //     if (selectedCrypto && equUsd.priceUsd && !isNaN(cryptovalue)) {
+  //       setUsdValue(+cryptovalue * +equUsd.priceUsd);
+  //     } else {
+  //       setUsdValue("");
+  //     }
+  //   },
+  //   [cryptovalue, selectedCrypto]
+  // );
 
   const switchToggle = (mode) => {
     mode === "swap" ? setToggle("swap") : setToggle("P2P");
@@ -102,36 +133,58 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
       value: "USDT",
     },
   ];
+  const handleTransactionError = (message) => {
+    setTransactionError(message || "Error making transaction");
+    setIsLoading(false);
+    refetchUser();
+  };
+  const handleTransactionSuccess = (message) => {
+    setIsLoading(false);
+    setCryptoValue("")
+    setUsdValue("")
+    closePresentModal()
+    refetchUser();
+  };
   const handleSubmit = async () => {
-    // setIsLoadingCrypto(true);
-    console.log(selectedCrypto);
+    // Reset error state
+    setTransactionError("");
+
+    // Basic validation
     if (!selectedCrypto) {
-      // setIsLoadingCrypto(false);
-      // toast.error("Please select a cryptocurrency.");
+      setTransactionError("Please select a cryptocurrency.");
       return;
     }
 
-    const handleTransactionSuccess = () => {
-      // setIsLoadingCrypto(false);
-      // toast.success("Transaction Successful");
-      // setCryptoPage(false);
-      refetchUser();
-      // localStorage.removeItem("transactions");
-      // localStorage.removeItem("transactions_timestamp");
-    };
-
-    const handleTransactionError = (message) => {
-      // setIsLoadingCrypto(false);
-      // toast.error(message || "Error making transaction");
-      // setCryptoPage(false);
-      refetchUser();
-    };
+    if (toCrypto) {
+      // Buying crypto: validate usdvalue
+      if (!usdvalue || isNaN(usdvalue) || parseFloat(usdvalue) <= 0) {
+        setTransactionError("Please enter a valid USD amount.");
+        return;
+      }
+      if (parseFloat(usdvalue) > currentUser?.balance) {
+        setTransactionError("Insufficient USD balance.");
+        return;
+      }
+    } else {
+      // Selling crypto: validate cryptovalue
+      if (!cryptovalue || isNaN(cryptovalue) || parseFloat(cryptovalue) <= 0) {
+        setTransactionError("Please enter a valid crypto amount.");
+        return;
+      }
+      const userCryptoBalance = userCryptoCurrencies.find(
+        (item) => item.symbol === selectedCrypto
+      )?.amount;
+      if (parseFloat(cryptovalue) > userCryptoBalance) {
+        setTransactionError(`Insufficient ${selectedCrypto} balance.`);
+        return;
+      }
+    }
 
     const transactionType = toCrypto ? "buy" : "sell";
     const value = toCrypto ? +usdvalue : +cryptovalue;
 
     try {
-      console.log("submitting");
+      setIsLoading(true);
       const response = await axios.post(
         `https://api.montrealtriustfinancial.online/currency/crypto/${transactionType}`,
         {
@@ -142,31 +195,27 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
       );
 
       if (response.data.status === "success") {
-        console.log("success");
+        setIsLoading(false);
         handleTransactionSuccess();
       } else {
+        setIsLoading(false);
         handleTransactionError(response.data.message || "Transaction failed");
       }
     } catch (err) {
       console.log(err);
       // Handle network or server-side errors
       if (err.response) {
-        // Server responded with a status other than 200
         const serverMessage =
           err.response.data?.message || "Transaction failed.";
         handleTransactionError(serverMessage);
       } else if (err.request) {
-        // Request was made but no response was received
         handleTransactionError("No response from server. Please try again.");
       } else {
-        // Something else went wrong during request setup
         handleTransactionError(err.message || "Unexpected error occurred.");
       }
     }
   };
-  // function handleSliderChange(value) {
-  //   setCryptoValue(value / 100000);
-  // }
+
   return (
     <View>
       {/*Toggle*/}
@@ -225,7 +274,15 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                   }}
                 >
                   <Text>Send</Text>
-                  <Text>Balance: ${currentUser?.balance.toFixed(2)}</Text>
+                  <Text>
+                    {toCrypto
+                      ? `Balance: $ ${currentUser?.balance.toFixed(2)}`
+                      : selectedCrypto
+                      ? `${selectedCrypto}: ${userCryptoCurrencies
+                          .find((item) => item?.symbol === selectedCrypto)
+                          ?.amount?.toFixed(6)} `
+                      : ""}
+                  </Text>
                 </View>
                 {toCrypto ? (
                   <>
@@ -262,7 +319,9 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                           borderRadius: 10,
                           // position: "absolute",
                           zIndex: 1,
-                          backgroundColor: "#f8f8fb",
+                          // backgroundColor: "#f8f8fb",
+                          // backgroundColor: "red",
+
                           justifyContent: "center",
                           // paddingLeft: 120,
                         }}
@@ -270,8 +329,8 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                         <TextInput
                           placeholder="0.00"
                           keyboardType="numeric"
-                          value={usdvalue==="0"?"":usdvalue}
-                          onChangeText={(value)=>setUsdValue(value)}
+                          value={usdvalue}
+                          onChangeText={(value) => setUsdValue(value)}
                           style={{
                             fontFamily: "outfit-bold",
                             textAlign: "right",
@@ -320,14 +379,16 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                         flexBasis: "40%",
                         height: 50,
                         borderRadius: 10,
-                        backgroundColor: "#f8f8fb",
+                        // backgroundColor: "#f8f8fb",
+                        // backgroundColor: "red",
                         justifyContent: "center",
                       }}
                     >
-                    <TextInput
+                      <TextInput
                         placeholder="0.0000"
-                        value={cryptovalue==="0" ? "" : cryptovalue}
-                        onChangeText={(value)=>setCryptoValue(value)}
+                        keyboardType="numeric"
+                        value={cryptovalue}
+                        onChangeText={(value) => setCryptoValue(value)}
                         style={{
                           fontFamily: "outfit-bold",
                           textAlign: "right",
@@ -355,6 +416,13 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                         thumbTintColor="#b9e4c9"
                       /> */}
                     </View>
+                  </View>
+                )}
+                {transactionError && (
+                  <View>
+                    <Text style={{ textAlign: "center", color: "red" }}>
+                      {transactionError}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -416,7 +484,8 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                     >
                       <TextInput
                         placeholder="0.00"
-                        value={Number(cryptovalue)?.toFixed(4)}
+                        readOnly={true}
+                        value={`${Number(cryptovalue)?.toFixed(4)}`}
                         style={{
                           fontFamily: "outfit-bold",
                           textAlign: "right",
@@ -470,9 +539,8 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                       >
                         <TextInput
                           placeholder="0.00"
-                          keyboardType="numeric"
-                          value={usdvalue==="0"?"":usdvalue}
-                          // onChangeText={(value) => handleUSDValue(value)}
+                          readOnly={true}
+                          value={`${Number(usdvalue)?.toFixed(3)}`}
                           style={{
                             fontFamily: "outfit-bold",
                             textAlign: "right",
@@ -488,25 +556,29 @@ export default function CryptoButtonTile({ buttonSwapMode }) {
                   </>
                 )}
               </View>
-              <TouchableOpacity
-                onPress={handleSubmit}
-                style={{
-                  marginTop: 10,
-                  padding: 15,
-                  backgroundColor: Colors.APPCOLOR,
-                  borderRadius: 10,
-                }}
-              >
-                <Text
+              {isLoading ? (
+                <ActivityIndicator size="large" color={Colors.APPCOLOR} />
+              ) : (
+                <TouchableOpacity
+                  onPress={handleSubmit}
                   style={{
-                    textAlign: "center",
-                    color: "white",
-                    fontFamily: "outfit-medium",
+                    marginTop: 10,
+                    padding: 15,
+                    backgroundColor: Colors.APPCOLOR,
+                    borderRadius: 10,
                   }}
                 >
-                  {toCrypto ? "Buy" : "Sell"}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "white",
+                      fontFamily: "outfit-medium",
+                    }}
+                  >
+                    {toCrypto ? "Buy" : "Sell"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
             {/* End of swap Screen*/}
           </>

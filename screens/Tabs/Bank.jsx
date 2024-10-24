@@ -132,9 +132,9 @@ export default function Bank() {
                 ) : mode === "withdraw" ? (
                   <MoneyButtonTile buttonSwapMode={"withdraw"} />
                 ) : mode === "cryptoSwap" ? (
-                  <CryptoButtonTile />
+                  <CryptoButtonTile closePresentModal={closePresentModal}  />
                 ) : mode === "cryptoP2P" ? (
-                  <CryptoButtonTile buttonSwapMode={"P2P"} />
+                  <CryptoButtonTile closePresentModal={closePresentModal}  buttonSwapMode={"P2P"} />
                 ) : (
                   <Text></Text>
                 )}
